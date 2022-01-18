@@ -81,38 +81,41 @@ def get_pages_from_directory(
                 )
             else:
                 folder_parent_path = current_path.parent
+            try:
+                folder_parent_title = folder_data[folder_parent_path]["title"]
 
-            folder_parent_title = folder_data[folder_parent_path]["title"]
-
-            if len(markdown_files) == 1 and collapse_single_pages:
-                parent_page_title = folder_parent_title
-            else:
-                if collapse_empty:
-                    folder_data[current_path]["title"] = current_path.relative_to(
-                        folder_parent_path
+                if len(markdown_files) == 1 and collapse_single_pages:
+                    parent_page_title = folder_parent_title
+                else:
+                    if collapse_empty:
+                        folder_data[current_path]["title"] = current_path.relative_to(
+                            folder_parent_path
+                        )
+                    if beautify_folders:
+                        folder_data[current_path]["title"] = (
+                            folder_data[current_path]["title"]
+                            .replace("-", " ")
+                            .replace("_", " ")
+                            .capitalize()
+                        )
+                    elif use_pages_file and ".pages" in file_names:
+                        with open(current_path.joinpath(".pages")) as pages_fp:
+                            pages_file_contents = yaml.safe_load(pages_fp)
+                        if "title" in pages_file_contents:
+                            folder_data[current_path]["title"] = pages_file_contents[
+                                "title"
+                            ]
+                    parent_page_title = folder_data[current_path]["title"]
+                    processed_pages.append(
+                        Page(
+                            title=parent_page_title,
+                            parent_title=folder_parent_title,
+                            body="",
+                        )
                     )
-                if beautify_folders:
-                    folder_data[current_path]["title"] = (
-                        folder_data[current_path]["title"]
-                        .replace("-", " ")
-                        .replace("_", " ")
-                        .capitalize()
-                    )
-                elif use_pages_file and ".pages" in file_names:
-                    with open(current_path.joinpath(".pages")) as pages_fp:
-                        pages_file_contents = yaml.safe_load(pages_fp)
-                    if "title" in pages_file_contents:
-                        folder_data[current_path]["title"] = pages_file_contents[
-                            "title"
-                        ]
-                parent_page_title = folder_data[current_path]["title"]
-                processed_pages.append(
-                    Page(
-                        title=parent_page_title,
-                        parent_title=folder_parent_title,
-                        body="",
-                    )
-                )
+            except KeyError:
+                print("skipping directory current_path: {current_path}")
+                pass
 
         for markdown_file in markdown_files:
             processed_page = get_page_data_from_file_path(markdown_file)
